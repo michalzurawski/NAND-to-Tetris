@@ -14,6 +14,16 @@ This project, based on the course [Nand to Tetris](http://nand2tetris.org), show
   2. [Multiplexers](#multiplexers)
     1. [Multiplexer](#Multiplexer)
     2. [Demultiplexer](#Demultiplexer)
+  3. [16 bits versions of gates](#16-bits-versions-of-gates)
+    1. [16 bits NOT](#16-bits-not)
+    2. [16 bits AND](#16-bits-and)
+    3. [16 bits OR](#16-bits-or)
+    4. [OR 8 Way](#or-8-way)
+    5. [16 bits Multiplexer](#16-bits-multiplexer)
+    6. [16 bits Multiplexer 4 Way](#16-bits-multiplexer-4-way)
+    7. [16 bits Multiplexer 8 Way](#16-bits-multiplexer-8-way)
+    8. [Demultiplexer 4 Way](#demultiplexer-4-way)
+    9. [Demultiplexer 8 Way](#demultiplexer-8-way)
 2. [Software](#software)
 
 ## Hardware
@@ -127,5 +137,105 @@ Or in the other words:
 | 1   | 0    | In   |
 
 ![Demultiplexer](hardware/multiplexers/DMux.png  "Demultiplexer")
+
+### 16 bits versions of gates
+
+16 bits version of base logic gates and mutexes.
+Notation `[0..15]` indicates 16 bits number where 0 is the least significant digit.
+
+1. [16 bits NOT](#16-bits-not)
+2. [16 bits AND](#16-bits-and)
+3. [16 bits OR](#16-bits-or)
+4. [OR 8 Way](#or-8-way)
+5. [16 bits Multiplexer](#16-bits-multiplexer)
+6. [16 bits Multiplexer 4 Way](#16-bits-multiplexer-4-way)
+7. [16 bits Multiplexer 8 Way](#16-bits-multiplexer-8-way)
+8. [Demultiplexer 4 Way](#demultiplexer-4-way)
+9. [Demultiplexer 8 Way](#demultiplexer-8-way)
+
+#### 16 bits NOT
+
+Negates each bit independently.
+
+![NOT16](hardware/gates-16-bits/Not16.png  "NOT16")
+
+#### 16 bits AND
+
+Bitwise `and` on each pair of bits.
+
+![AND16](hardware/gates-16-bits/And16.png  "AND16")
+
+#### 16 bits OR
+
+Bitwise `or` on each pair of bits.
+
+![OR16](hardware/gates-16-bits/Or16.png  "OR16")
+
+#### OR 8 Way
+
+Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
+
+![OR8Way](hardware/gates-16-bits/Or8Way.png  "OR8Way")
+
+#### 16 bits Multiplexer
+
+| sel | Out |
+| --- | --- |
+| 0   | In0 |
+| 1   | In1 |
+
+![Mux16](hardware/gates-16-bits/Mux16.png  "Mux16")
+
+#### 16 bits Multiplexer 4 Way
+
+| sel | Out |
+| --- | --- |
+| 00  | In0 |
+| 01  | In1 |
+| 10  | In2 |
+| 11  | In3 |
+
+![Mux4Way16](hardware/gates-16-bits/Mux4Way16.png  "Mux4Way16")
+
+#### 16 bits Multiplexer 8 Way
+
+| sel | Out |
+| --- | --- |
+| 000 | In0 |
+| 001 | In1 |
+| 010 | In2 |
+| 011 | In3 |
+| 100 | In4 |
+| 101 | In5 |
+| 110 | In6 |
+| 111 | In7 |
+
+![Mux8Way16](hardware/gates-16-bits/Mux8Way16.png  "Mux8Way16")
+
+#### Demultiplexer 4 Way
+
+| sel | Out0 | Out1 | Out2 | Out3 |
+| --- | ---- | ---- | ---- | ---- |
+| 00  | In   | 0    | 0    | 0    |
+| 01  | 0    | In   | 0    | 0    |
+| 10  | 0    | 0    | In   | 0    |
+| 11  | 0    | 0    | 0    | In   |
+
+![DMux4Way](hardware/gates-16-bits/DMux4Way.png  "DMux4Way")
+
+#### Demultiplexer 8 Way
+
+| sel | Out0 | Out1 | Out2 | Out3 | Out4 | Out5 | Out6 | Out7 |
+| --- | ---  | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| 000 | In   | 0    | 0    | 0    | 0    | 0    | 0    | 0    |
+| 001 | 0    | In   | 0    | 0    | 0    | 0    | 0    | 0    |
+| 010 | 0    | 0    | In   | 0    | 0    | 0    | 0    | 0    |
+| 011 | 0    | 0    | 0    | In   | 0    | 0    | 0    | 0    |
+| 100 | 0    | 0    | 0    | 0    | In   | 0    | 0    | 0    |
+| 101 | 0    | 0    | 0    | 0    | 0    | In   | 0    | 0    |
+| 110 | 0    | 0    | 0    | 0    | 0    | 0    | In   | 0    |
+| 111 | 0    | 0    | 0    | 0    | 0    | 0    | 0    | In   |
+
+![DMux8Way](hardware/gates-16-bits/DMux8Way.png  "DMux8Way")
 
 ## Software
