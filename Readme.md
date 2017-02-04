@@ -11,6 +11,9 @@ This project, based on the course [Nand to Tetris](http://nand2tetris.org), show
     3. [AND](#and)
     4. [OR](#or)
     5. [XOR](#xor)
+  2. [Multiplexers](#multiplexers)
+    1. [Multiplexer](#Multiplexer)
+    2. [Demultiplexer](#Demultiplexer)
 2. [Software](#software)
 
 ## Hardware
@@ -79,5 +82,50 @@ NAND gates will be used to construct other logic gates.
 | 1   | 1   | 0   |
 
 ![XOR](hardware/basic-logic-gates/Xor.png  "XOR")
+
+### Multiplexers
+
+1. [Multiplexer](#multiplexer)
+2. [Demultiplexer](#demultiplexer)
+
+#### Multiplexer
+
+| sel | In0 | In1 | Out |
+|-----| --- | --- | --- |
+| 0   | 0   | 0   | 0   |
+| 0   | 0   | 1   | 0   |
+| 0   | 1   | 0   | 1   |
+| 0   | 1   | 1   | 1   |
+| 1   | 0   | 0   | 0   |
+| 1   | 0   | 1   | 1   |
+| 1   | 1   | 0   | 0   |
+| 1   | 1   | 1   | 1   |
+
+Or in the other words:
+
+| sel | Out |
+|-----|-----|
+| 0   | In0 |
+| 1   | In1 |
+
+![Multiplexer](hardware/multiplexers/Mux.png  "Multiplexer")
+
+#### Demultiplexer
+
+| sel | In | Out0 | Out1 |
+|-----|----|------|------|
+| 0   | 0  | 0    | 0    |
+| 0   | 1  | 1    | 0    |
+| 1   | 0  | 0    | 0    |
+| 1   | 1  | 0    | 1    |
+
+Or in the other words:
+
+| sel | Out0 | Out1 |
+| --- | ---- | ---- |
+| 0   | In   | 0    |
+| 1   | 0    | In   |
+
+![Demultiplexer](hardware/multiplexers/DMux.png  "Demultiplexer")
 
 ## Software
