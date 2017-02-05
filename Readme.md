@@ -1,7 +1,14 @@
 # NAND to Tetris
 
 ## Description
-This project, based on the course [Nand to Tetris](http://nand2tetris.org), shows an example design of a fully operational, multipurpose 16-bit computer, constructed using only [NAND](https://en.wikipedia.org/wiki/NAND_gate) logic gates and basic [flip-flops](https://en.wikipedia.org/wiki/Flip-flop_(electronics)). This project includes own assembler, compiler, Virtual Machine and basic Operating System. Design of this computer assumes [memory-mapped I/O](https://en.wikipedia.org/wiki/Memory-mapped_I/O) is given for the input (keyboard) and output (monitor). Implementation and design of each component is written in bottom-up manner, starting from creation of basic logic gates through mutexes, CPU, and ends on Tetris game.
+This project, based on the course [Nand to Tetris](http://nand2tetris.org), shows an example design of a fully operational,
+multipurpose 16-bit computer, constructed using only [NAND](https://en.wikipedia.org/wiki/NAND_gate) logic gates
+and basic [flip-flops](https://en.wikipedia.org/wiki/Flip-flop_(electronics)).
+This project includes own assembler, compiler, Virtual Machine and basic Operating System.
+Design of this computer assumes [memory-mapped I/O](https://en.wikipedia.org/wiki/Memory-mapped_I/O)
+is given for the input (keyboard) and output (monitor).
+Implementation and design of each component is written in bottom-up manner,
+starting from creation of basic logic gates through multiplexers, CPU and ends on Tetris game.
 
 ## Table of Contents
 1. [Hardware](#hardware)
@@ -39,12 +46,17 @@ This project, based on the course [Nand to Tetris](http://nand2tetris.org), show
     6. [RAM with 512 registers](#ram-with-512-registers)
     7. [RAM with 4096 registers](#ram-with-4096-registers)
     8. [RAM with 16384 registers](#ram-with-16384-registers)
-    9. [Main memory](#main-memory)
+    9. [Program Counter](#program-counter)
+  6. [Computer architecture](#computer-architecture)
+    1. [Main memory](#main-memory)
+    2. [Central Processor Unit](#central-processor-unit)
+    3. [Computer](#computer)
 2. [Software](#software)
 
 ## Hardware
 Each piece of hardware is constructed either from basic NAND, Flip-Flop or using already designed elements.
-All elements have been described using [Hardware Description Language](https://en.wikipedia.org/wiki/Hardware_description_language) and can be find in the hardware directory.
+All elements have been described using [Hardware Description Language](https://en.wikipedia.org/wiki/Hardware_description_language)
+and can be find in the hardware directory.
 This files can be tested using Hardware Simulator in the tool directory.
 Additionally there are also presented below as a drawings - each of them contain symbol of that element (on the right/below) and design.
 
@@ -367,7 +379,7 @@ if the ALU output < 0, `ng` is set to 1; otherwise `ng` is set to 0.
 6. [RAM with 512 registers](#ram-with-512-registers)
 7. [RAM with 4096 registers](#ram-with-4096-registers)
 8. [RAM with 16384 registers](#ram-with-16384-registers)
-9. [Main memory](#main-memory)
+9. [Program Counter](#program-counter)
 
 #### Flip-flop
 
@@ -423,6 +435,25 @@ Returns value stored at given address in next clock cycle.
 
 ![RAM16K](hardware/memory/RAM16K.png  "RAM16K")
 
+#### Program Counter
+
+ A 16-bit counter with load and reset control bits.
+
+ ```
+ if (reset[t] == 1) out[t+1] = 0
+ else if (load[t] == 1) out[t+1] = in[t]
+ else if (inc[t] == 1) out[t+1] = out[t] + 1 (integer addition)
+ else out[t+1] = out[t]
+```
+
+![PC](hardware/memory/PC.png  "PC")
+
+### Computer architecture
+
+1. [Main memory](#main-memory)
+2. [Central Processor Unit](#central-processor-unit)
+3. [Computer](#computer)
+
 #### Main memory
 
 Returns value stored at given address in next clock cycle.
@@ -448,8 +479,79 @@ the range 0x4000-0x5FFF results in accessing the screen memory
 map. Access to address 0x6000 results in accessing the keyboard 
 memory map. The behavior in these addresses is described in the 
 
-Screen and Keyboard chip specifications given in the book.
+![Memory](hardware/computer-architecture/Memory.png  "Memory")
 
-![Memory](hardware/memory/Memory.png  "Memory")
+#### Central Processor Unit
+
+The machine language used for the CPU is based on two 16 bits command types.
+
+The *address instruction* has the format `0vvvvvvvvvvvvvvv`, each `v` being 0 or 1.
+This instruction causes the computer to load the 15 bits constant `vvvvvvvvvvvvvvv` into Register A.
+
+The *compute instruction* has the format `111accccccdddjjj`.
+The `a` and `c` bits instructs ALU which function to compute,
+the `d` bits instructs where to store ALU output,
+the `j` bits specify an optional jump condition.
+
+The `cccccc` corresponds exactly to the ALU inputs: `zx`, `nx`, `zy`, `ny`, `f`, `no`.
+
+The CPU consist two registers: `Register A` and `Register D`.
+The `A` and `D` values indicates memory stored in register either `A` or `D`.
+`M` indicates value stored in memory at address `A` i.e. `M=memory[A]`.
+
+| a=0  | a=1  | zx  | nx  | zy  | ny  | f   | no  |
+| ---- | ---- | --- | --- | --- | --- | --- | --- |
+| 0    | 0    | 1   | 0   | 1   | 0   | 1   | 0   |
+| 1    | 1    | 1   | 1   | 1   | 1   | 1   | 1   |
+| -1   | -1   | 1   | 1   | 1   | 0   | 1   | 0   |
+| D    | D    | 0   | 0   | 1   | 1   | 0   | 0   |
+| A    | M    | 1   | 1   | 0   | 0   | 0   | 0   |
+| !D   | !D   | 0   | 0   | 1   | 1   | 0   | 1   |
+| !A   | !M   | 1   | 1   | 0   | 0   | 0   | 1   |
+| -D   | -D   | 0   | 0   | 1   | 1   | 1   | 1   |
+| -A   | -M   | 1   | 1   | 0   | 0   | 1   | 1   |
+| D+1  | D+1  | 0   | 1   | 1   | 1   | 1   | 1   |
+| A+1  | M+1  | 1   | 1   | 0   | 1   | 1   | 1   |
+| D-1  | D-1  | 0   | 0   | 1   | 1   | 1   | 0   |
+| A-1  | M-1  | 1   | 1   | 0   | 0   | 1   | 0   |
+| D+A  | D+M  | 0   | 0   | 0   | 0   | 1   | 0   |
+| D-A  | D-M  | 0   | 1   | 0   | 0   | 1   | 1   |
+| A-D  | M-D  | 0   | 0   | 0   | 1   | 1   | 1   |
+| D&A  | D&M  | 0   | 0   | 0   | 0   | 0   | 0   |
+| D\|A | D\|M | 0   | 1   | 0   | 1   | 0   | 1   |
+
+CPU allows you to store results in registers `A` and `D` or in the memory `M`.
+These results may be stored in any of them simultaneously.
+
+| d   | d   | d   |      |
+| --- | --- | --- | ---- |
+| 0   | 0   | 0   | null |
+| 0   | 0   | 1   | M    |
+| 0   | 1   | 0   | D    |
+| 0   | 1   | 1   | MD   |
+| 1   | 0   | 0   | A    |
+| 1   | 0   | 1   | MA   |
+| 1   | 1   | 0   | DA   |
+| 1   | 1   | 1   | MDA  |
+
+CPU allows unconditional (`JMP`) and conditional jumps depending of the ALU output.
+If jump is called the next instruction is taken from register A.
+
+| j   | j   | j   |      |
+| --- | --- | --- | ---- |
+| 0   | 0   | 0   | null |
+| 0   | 0   | 1   | JGT  |
+| 0   | 1   | 0   | JEQ  |
+| 0   | 1   | 1   | JGE  |
+| 1   | 0   | 0   | JLT  |
+| 1   | 0   | 1   | JNE  |
+| 1   | 1   | 0   | JLE  |
+| 1   | 1   | 1   | JMP  |
+
+![CPU](hardware/computer-architecture/CPU.png  "CPU")
+
+#### Computer
+
+![Computer](hardware/computer-architecture/Computer.png  "Computer")
 
 ## Software
