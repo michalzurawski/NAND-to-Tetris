@@ -30,6 +30,16 @@ This project, based on the course [Nand to Tetris](http://nand2tetris.org), show
     3. [Adder](#adder)
     4. [Incrementer](#incrementer)
     5. [ALU](#alu)
+  5. [Memory](#memory)
+    1. [Flip-flop](#flip-flop)
+    2. [Bit](#bit)
+    3. [Register](#register)
+    4. [RAM with 8 registers](#ram-with-8-registers)
+    5. [RAM with 64 registers](#ram-with-64-registers)
+    6. [RAM with 512 registers](#ram-with-512-registers)
+    7. [RAM with 4096 registers](#ram-with-4096-registers)
+    8. [RAM with 16384 registers](#ram-with-16384-registers)
+    9. [Main memory](#main-memory)
 2. [Software](#software)
 
 ## Hardware
@@ -346,5 +356,100 @@ if the ALU output < 0, `ng` is set to 1; otherwise `ng` is set to 0.
 | 0   | 1   | 0   | 1   | 0   | 1   | x\|y |
 
 ![ALU](hardware/alu/ALU.png  "ALU")
+
+### Memory
+
+1. [Flip-flop](#flip-flop)
+2. [Bit](#bit)
+3. [Register](#register)
+4. [RAM with 8 registers](#ram-with-8-registers)
+5. [RAM with 64 registers](#ram-with-64-registers)
+6. [RAM with 512 registers](#ram-with-512-registers)
+7. [RAM with 4096 registers](#ram-with-4096-registers)
+8. [RAM with 16384 registers](#ram-with-16384-registers)
+9. [Main memory](#main-memory)
+
+#### Flip-flop
+
+Flip-flop is a circuit that has two stables states and is used to store state information.
+It returns its input in next clock cycle.
+
+![DFF](hardware/memory/DFF.png  "DFF")
+
+#### Bit
+
+| load | out(t) | out(t+1) |
+| ---- | ------ | -------- |
+| 0    | 0      | 0        |
+| 0    | 1      | 1        |
+| 1    | 0      | In       |
+| 1    | 1      | In       |
+
+![Bit](hardware/memory/Bit.png  "Bit")
+
+##### Register
+
+16 bit register.
+
+![Register](hardware/memory/Register.png  "Register")
+
+#### RAM with 8 registers
+
+Returns value stored at given address in next clock cycle.
+
+![RAM8](hardware/memory/RAM8.png  "RAM8")
+
+#### RAM with 64 registers
+
+Returns value stored at given address in next clock cycle.
+
+![RAM64](hardware/memory/RAM64.png  "RAM64")
+
+#### RAM with 512 registers
+
+Returns value stored at given address in next clock cycle.
+
+![RAM512](hardware/memory/RAM512.png  "RAM512")
+
+#### RAM with 4096 registers
+
+Returns value stored at given address in next clock cycle.
+
+![RAM4K](hardware/memory/RAM4K.png  "RAM4K")
+
+#### RAM with 16384 registers
+
+Returns value stored at given address in next clock cycle.
+
+![RAM16K](hardware/memory/RAM16K.png  "RAM16K")
+
+#### Main memory
+
+Returns value stored at given address in next clock cycle.
+
+The complete address space of the computer's memory,
+including RAM and memory-mapped I/O. 
+The chip facilitates read and write operations, as follows:
+
+    Read:  out(t) = Memory[address(t)](t)
+
+    Write: if load(t-1) then Memory[address(t-1)](t) = in(t-1)
+
+In words: the chip always outputs the value stored at the memory 
+location specified by address. If load==1, the in value is loaded 
+into the memory location specified by address. This value becomes 
+available through the out output from the next time step onward.
+Address space rules:
+
+Only the upper 16K+8K+1 words of the Memory chip are used. 
+
+Access to address>0x6000 is invalid. Access to any address in 
+the range 0x4000-0x5FFF results in accessing the screen memory 
+map. Access to address 0x6000 results in accessing the keyboard 
+memory map. The behavior in these addresses is described in the 
+
+Screen and Keyboard chip specifications given in the book.
+
+![Memory](hardware/memory/Memory.png  "Memory")
 
 ## Software
