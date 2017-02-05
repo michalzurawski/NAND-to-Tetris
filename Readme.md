@@ -24,6 +24,12 @@ This project, based on the course [Nand to Tetris](http://nand2tetris.org), show
     7. [16 bits Multiplexer 8 Way](#16-bits-multiplexer-8-way)
     8. [Demultiplexer 4 Way](#demultiplexer-4-way)
     9. [Demultiplexer 8 Way](#demultiplexer-8-way)
+  4. [Arithmetic Logic Union](#arithmetic-logic-union)
+    1. [Half Adder](#half-adder)
+    2. [Full Adder](#full-adder)
+    3. [Adder](#adder)
+    4. [Incrementer](#incrementer)
+    5. [ALU](#alu)
 2. [Software](#software)
 
 ## Hardware
@@ -237,5 +243,108 @@ Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
 | 111 | 0    | 0    | 0    | 0    | 0    | 0    | 0    | In   |
 
 ![DMux8Way](hardware/gates-16-bits/DMux8Way.png  "DMux8Way")
+
+### Arithmetic Logic Union
+
+1. [Half Adder](#half-adder)
+2. [Full Adder](#full-adder)
+3. [Adder](#adder)
+4. [Incrementer](#incrementer)
+5. [ALU](#alu)
+
+#### Half Adder
+
+Used for creating [Full Adder](#full-adder).
+
+| In0 | In1 | sum | carry |
+| --- | --- | --- | ----- |
+| 0   | 0   | 0   | 0     |
+| 0   | 1   | 1   | 0     |
+| 1   | 0   | 1   | 0     |
+| 1   | 1   | 0   | 1     |
+
+![HalfAdder](hardware/alu/HalfAdder.png  "HalfAdder")
+
+#### Full Adder
+
+Used for creating [Adder](#adder).
+
+| In0 | In1 | In2 | sum | carry |
+| --- | --- | --- | --- | ----- |
+| 0   | 0   | 0   | 0   | 0     |
+| 0   | 0   | 1   | 1   | 0     |
+| 0   | 1   | 0   | 1   | 0     |
+| 0   | 1   | 1   | 0   | 1     |
+| 1   | 0   | 0   | 1   | 0     |
+| 1   | 0   | 1   | 0   | 1     |
+| 1   | 1   | 0   | 0   | 1     |
+| 1   | 1   | 1   | 1   | 1     |
+
+![FullAdder](hardware/alu/FullAdder.png  "FullAdder")
+
+#### Adder
+
+Adds two 16-bit values.
+The most significant carry bit is ignored.
+
+![Add16](hardware/alu/Add16.png  "Add16")
+
+#### Incrementer
+
+16 bits Incrementer. Increases the input value by 1.
+
+![Inc16](hardware/alu/Inc16.png  "Inc16")
+
+#### ALU
+
+16 bits Arithmetic Logic Union.
+
+Computes one of the following functions:
+
+`x+y, x-y, y-x, 0, 1, -1, x, y, -x, -y, !x, !y, x+1, y+1, x-1, y-1, x&y, x|y`
+
+on two 16-bit inputs, according to 6 input bits denoted `zx, nx, zy, ny, f, no`.
+In addition, the ALU computes two 1-bit outputs:
+
+if the ALU output == 0, `zr` is set to 1; otherwise `zr` is set to 0;
+
+if the ALU output < 0, `ng` is set to 1; otherwise `ng` is set to 0.
+
+`zx` - zero `x`
+
+`nx` - negate `x`
+
+`zy` - zero `y`
+
+`zy` - negate `y`
+
+`f == 0` - computes `x & y`
+
+`f == 1` - computes `x + y`
+
+`no` - negate output
+
+| zx  | nx  | zy  | ny  | f   | no  | Out  |
+| --- | --- | --- | --- | --- | --- | ---- |
+| 1   | 0   | 1   | 0   | 0   | 0   | 0    |
+| 1   | 1   | 1   | 1   | 1   | 1   | 1    |
+| 1   | 1   | 1   | 0   | 1   | 0   | -1   |
+| 0   | 0   | 1   | 1   | 0   | 0   | x    |
+| 1   | 1   | 0   | 0   | 0   | 0   | y    |
+| 0   | 0   | 1   | 1   | 0   | 1   | !x   |
+| 1   | 1   | 0   | 0   | 0   | 1   | !y   |
+| 0   | 0   | 1   | 1   | 1   | 1   | -x   |
+| 1   | 1   | 0   | 0   | 1   | 1   | -y   |
+| 0   | 1   | 1   | 1   | 1   | 1   | x+1  |
+| 1   | 1   | 0   | 1   | 1   | 1   | y+1  |
+| 0   | 0   | 1   | 1   | 1   | 0   | x-1  |
+| 1   | 1   | 0   | 0   | 1   | 0   | y-1  |
+| 0   | 0   | 0   | 0   | 1   | 0   | x+y  |
+| 0   | 1   | 0   | 0   | 1   | 1   | x-y  |
+| 0   | 0   | 0   | 1   | 1   | 1   | y-x  |
+| 0   | 0   | 0   | 0   | 0   | 0   | x&y  |
+| 0   | 1   | 0   | 1   | 0   | 1   | x\|y |
+
+![ALU](hardware/alu/ALU.png  "ALU")
 
 ## Software
