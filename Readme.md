@@ -52,6 +52,12 @@ starting from creation of basic logic gates through multiplexers, CPU and ends o
     2. [Central Processor Unit](#central-processor-unit)
     3. [Computer](#computer)
 2. [Software](#software)
+  1. [Assembler](#assembler)
+    1. [Assembler Specification](#assembler-specification)
+    2. [Assembler Instructions](#assembler-instructions)
+    3. [Assembler Symbols](#assembler-symbols)
+    4. [Assembler Implementation](#assembler-implementation)
+    5. [Assembly Examples](#assembly-examples)
 
 ## Hardware
 Each piece of hardware is constructed either from basic NAND, Flip-Flop or using already designed elements.
@@ -495,7 +501,7 @@ the `j` bits specify an optional jump condition.
 
 The `cccccc` corresponds exactly to the ALU inputs: `zx`, `nx`, `zy`, `ny`, `f`, `no`.
 
-The CPU consist two registers: `Register A` and `Register D`.
+The CPU consist of two registers: `Register A` and `Register D`.
 The `A` and `D` values indicates memory stored in register either `A` or `D`.
 `M` indicates value stored in memory at address `A` i.e. `M=memory[A]`.
 
@@ -555,3 +561,82 @@ If jump is called the next instruction is taken from register A.
 ![Computer](hardware/computer-architecture/Computer.png  "Computer")
 
 ## Software
+
+### Assembler
+
+1. [Assembler Specification](#assembler-specification)
+2. [Assembler Instructions](#assembler-instructions)
+3. [Assembler Symbols](#assembler-symbols)
+4. [Assembler Implementation](#assembler-implementation)
+5. [Assembly Examples](#assembly-examples)
+
+Main goal of Assembler is to translate low-level assembly code into machine language instruction.
+All machine language instructions are presented in [Central Processor Unit](#central-processor-unit) section.
+
+#### Assembler Specification
+
+Assembly language is composed of either an instruction or a symbol declaration:
+
+_Instruction_: an *address* or a *compute* instructions, described in section [Assembler Instructions](#assembler-instructions).
+
+_(Symbol)_: This pseudo-command binds the Symbol to the memory location
+into which the next command in the program will be stored.
+It is called `pseudocommand` since it generates no machine code.
+
+_Constants and Symbols_: *Constants* must be non-negative and are written in decimal
+notation. A user-defined symbol can be any sequence of letters, digits, underscore,
+dot, dollar sign, and colon that does not begin with a digit.
+
+_Comments_ Text beginning with two slashes and ending at the end of the line is
+considered a comment and is ignored.
+
+_White Space_ Space characters are ignored. Empty lines are ignored.
+
+_Case Conventions_ All the assembly mnemonics must be written in uppercase. The
+rest (user-defined labels and variable names) is case sensitive.
+
+#### Assembler Instructions
+
+Described machine language consist of two instruction types called *address* and *compute* instructions.
+
+_Address Instruction_: `@value`
+Value is non-negative decimal number or a symbol referring to such number.
+It corresponds to `0vvvvvvvvvvvvvvv` machine language instruction - hence the value can be maximally `2^15-1=32767`.
+
+_Compute Instruction_: `dest=comp;jump`
+Either `dest` or `jump` fields may be omitted.
+If `dest` is empty, the `=` is omitted.
+If `jump` is empty, the `;` is omitted.
+It corresponds to `111accccccdddjjj` machine language instruction. `dest` corresponds to `ddd`, `comp` to `acccccc` and `jump` to `jjj`.
+
+#### Assembler Symbols
+
+Assembly commands can refer to memory locations (addresses) using either constants or symbols.
+Symbols in assembly programs arise from three sources.
+
+_Predefined Symbols_ Any assembly program is allowed to use the following predefined symbols.
+
+| Label  | RAM address   |
+| ------ | ------------- |
+| SP     | 0x0000        |
+| LCL    | 0x0001        |
+| ARG    | 0x0002        |
+| THIS   | 0x0003        |
+| THAT   | 0x0004        |
+| R0-R15 | 0x0000-0x000F |
+| SCREEN | 0x4000        |
+| KBD    | 0x6000        |
+
+_Label Symbol_ The pseudo-command `(xxx)` defines the symbol `xxx` to refer to the
+instruction memory location holding the next command in the program. A label can
+be defined only once and can be used anywhere in the assembly program, even before
+the line in which it is defined.
+
+_Variable Symbols_ Any symbol `xxx` appearing in an assembly program that is
+not predefined and is not defined elsewhere using the `(xxx)` command is treated as
+a variable. Variables are mapped to consecutive memory locations as they are first
+encountered, starting at RAM address 16 (0x0010).
+
+#### Assembler Implementation
+
+#### Assembly Examples
