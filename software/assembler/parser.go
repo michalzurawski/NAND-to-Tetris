@@ -2,6 +2,7 @@ package main
 
 import (
   "bufio"
+  "fmt"
   "os"
   "strings"
 )
@@ -11,6 +12,7 @@ import (
 // (fields and symbols). In addition, removes all white space and comments.
 type Parser struct {
   scanner *bufio.Scanner
+  file *os.File
 }
 
 type CommandType int
@@ -23,9 +25,19 @@ const (
 
 
 // Opens the input file
-func NewParser(file *os.File) *Parser {
+func NewParser(fileName string) *Parser {
+  file, err := os.Open(fileName)
+  if err != nil {
+    fmt.Fprintf(os.Stderr, "Could not open file %s", fileName);
+    os.Exit(1)
+  }
   scanner := bufio.NewScanner(file)
   return &Parser{scanner: scanner}
+}
+
+// Closes the file
+func (parser *Parser) Close() error {
+  return parser.file.Close()
 }
 
 // Reads the next command from the input and makes it current

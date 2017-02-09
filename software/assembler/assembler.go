@@ -14,19 +14,8 @@ func main(){
   }
 
   fileName := os.Args[1]
-  file, err := os.Open(fileName)
-  if err != nil {
-    fmt.Println("Could not open file", fileName);
-    os.Exit(1)
-  }
-  fileSave, err := os.Create(fileName[:len(fileName)-3] + "hack")
-  if err != nil {
-    fmt.Println("Could not save file", fileName);
-    os.Exit(1)
-  }
-  defer fileSave.Close()
-
-  parser := NewParser(file)
+  parser := NewParser(fileName)
+  defer parser.Close()
   symbolTable := NewSymbolTable()
   currentInstruction := 0
 
@@ -39,15 +28,17 @@ func main(){
     case L_COMMAND:
       symbol := parser.GetSymbol()
       symbolTable.AddEntry(symbol, currentInstruction)
-    default:
-      panic("Unexpceted parser error")
     }
   }
 
-  file.Close()
-  file, _ = os.Open(fileName)
-  defer file.Close()
-  parser = NewParser(file)
+  parser = NewParser(fileName)
+  defer parser.Close()
+  fileSave, err := os.Create(fileName[:len(fileName)-3] + "hack")
+  if err != nil {
+    fmt.Println("Could not save file", fileName);
+    os.Exit(1)
+  }
+  defer fileSave.Close()
 
   for parser.Advance() {
     switch parser.GetCommandType() {
@@ -58,9 +49,6 @@ func main(){
     case C_COMMAND:
       dest, comp, jump := parser.GetMnemonics()
       fileSave.WriteString(GetCCommand(dest, comp, jump) + "\n")
-    case L_COMMAND:
-    default:
-      panic("Unexpceted parser error")
     }
   }
 }

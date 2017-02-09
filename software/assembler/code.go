@@ -3,6 +3,7 @@ package main
 import (
   "bytes"
   "fmt"
+  "os"
   "sort"
   "strings"
 )
@@ -32,7 +33,9 @@ func GetDestinationCode(mnemonic string) string {
     case "AD"  : return "110"
     case "ADM" : return "111"
   }
-  panic("Error in processing destination mnemonic")
+  fmt.Fprintf(os.Stderr, "Illegal mnemonic: %s. Destination mnemonic expected.", mnemonic)
+  os.Exit(1)
+  return ""
 }
 
 // Translate assembly language jump mnemonic into binary codes
@@ -47,7 +50,9 @@ func GetJumpCode(mnemonic string) string {
     case "JLE" : return "110"
     case "JMP" : return "111"
   }
-  panic("Error in processing jump mnemonic")
+  fmt.Fprintf(os.Stderr, "Illegal mnemonic: %s. Jump mnemonic expected.", mnemonic)
+  os.Exit(1)
+  return ""
 }
 
 // Translate assembly language compute mnemonic into binary codes
@@ -82,7 +87,9 @@ func GetComputeCode(mnemonic string) string {
     case "D|A"  : return "0010101"
     case "D|M"  : return "1010101"
   }
-  panic("Error in processing compute mnemonic")
+  fmt.Fprintf(os.Stderr, "Illegal mnemonic: %s. Compute mnemonic expected.", mnemonic)
+  os.Exit(1)
+  return ""
 }
 
 func sortString(w string) string {

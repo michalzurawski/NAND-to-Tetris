@@ -8,7 +8,7 @@ This project includes own assembler, compiler, Virtual Machine and basic Operati
 Design of this computer assumes [memory-mapped I/O](https://en.wikipedia.org/wiki/Memory-mapped_I/O)
 is given for the input (keyboard) and output (monitor).
 Implementation and design of each component is written in bottom-up manner,
-starting from creation of basic logic gates through multiplexers, CPU and ends on Tetris game.
+starting from creation of basic logic gates through multiplexers, CPU and ends on [Tetris](https://en.wikipedia.org/wiki/Tetris) game.
 
 ## Table of Contents
 1. [Hardware](#hardware)
@@ -41,12 +41,8 @@ starting from creation of basic logic gates through multiplexers, CPU and ends o
     1. [Flip-flop](#flip-flop)
     2. [Bit](#bit)
     3. [Register](#register)
-    4. [RAM with 8 registers](#ram-with-8-registers)
-    5. [RAM with 64 registers](#ram-with-64-registers)
-    6. [RAM with 512 registers](#ram-with-512-registers)
-    7. [RAM with 4096 registers](#ram-with-4096-registers)
-    8. [RAM with 16384 registers](#ram-with-16384-registers)
-    9. [Program Counter](#program-counter)
+    4. [RAM](#ram)
+    5. [Program Counter](#program-counter)
   6. [Computer architecture](#computer-architecture)
     1. [Main memory](#main-memory)
     2. [Central Processor Unit](#central-processor-unit)
@@ -74,7 +70,9 @@ Additionally there are also presented below as a drawings - each of them contain
 5. [XOR](#xor)
 
 #### NAND
-NAND gates will be used to construct other logic gates.
+
+[NAND](https://en.wikipedia.org/wiki/NAND_gate) gates will be used to construct other logic gates.
+It produces *false* only when both its input are *true*.
 
 | In0 | In1 | Out |
 | --- | --- | --- |
@@ -87,14 +85,18 @@ NAND gates will be used to construct other logic gates.
 
 #### NOT
 
+[NOT](https://en.wikipedia.org/wiki/Inverter_(logic_gate)) gate inverts its output.
+
 | In  | Out |
 | --- | --- |
 | 0   | 1   |
 | 1   | 0   |
 
-![NOT](hardware/basic-logic-gates/Not.png  "NOT")
+![NOT](hardware/basic-logic-gates/Not.png "NOT")
 
 #### AND
+
+[AND](https://en.wikipedia.org/wiki/AND_gate) gate produces *true* only when both its input are *true*.
 
 | In0 | In1 | Out |
 | --- | --- | --- |
@@ -103,9 +105,11 @@ NAND gates will be used to construct other logic gates.
 | 1   | 0   | 0   |
 | 1   | 1   | 1   |
 
-![AND](hardware/basic-logic-gates/And.png  "AND")
+![AND](hardware/basic-logic-gates/And.png "AND")
 
 #### OR
+
+[OR](https://en.wikipedia.org/wiki/OR_gate) gate produces *false* only when both its input are *false*.
 
 | In0 | In1 | Out |
 | --- | --- | --- |
@@ -114,9 +118,11 @@ NAND gates will be used to construct other logic gates.
 | 1   | 0   | 1   |
 | 1   | 1   | 1   |
 
-![OR](hardware/basic-logic-gates/Or.png  "OR")
+![OR](hardware/basic-logic-gates/Or.png "OR")
 
 #### XOR
+
+[XOR](https://en.wikipedia.org/wiki/XOR_gate) gate produces *true* only when exactly one of its input are *true*.
 
 | In0 | In1 | Out |
 | --- | --- | --- |
@@ -125,7 +131,7 @@ NAND gates will be used to construct other logic gates.
 | 1   | 0   | 1   |
 | 1   | 1   | 0   |
 
-![XOR](hardware/basic-logic-gates/Xor.png  "XOR")
+![XOR](hardware/basic-logic-gates/Xor.png "XOR")
 
 ### Multiplexers
 
@@ -133,6 +139,9 @@ NAND gates will be used to construct other logic gates.
 2. [Demultiplexer](#demultiplexer)
 
 #### Multiplexer
+
+[Multiplexer](https://en.wikipedia.org/wiki/Multiplexer) selects one of its input and forwards to the output.
+It has one single select line (below denoted as *sel*) which is used to select which input to use.
 
 | sel | In0 | In1 | Out |
 |-----| --- | --- | --- |
@@ -152,9 +161,13 @@ Or in the other words:
 | 0   | In0 |
 | 1   | In1 |
 
-![Multiplexer](hardware/multiplexers/Mux.png  "Multiplexer")
+![Multiplexer](hardware/multiplexers/Mux.png "Multiplexer")
 
 #### Demultiplexer
+
+[Demultiplexer](https://en.wikipedia.org/wiki/Multiplexer#Digital_demultiplexers)
+is opposite of multiplexer - it forwards the input into one of its outputs.
+It has one single select line (below denoted as *sel*) which is used to select which output to use.
 
 | sel | In | Out0 | Out1 |
 |-----|----|------|------|
@@ -170,7 +183,7 @@ Or in the other words:
 | 0   | In   | 0    |
 | 1   | 0    | In   |
 
-![Demultiplexer](hardware/multiplexers/DMux.png  "Demultiplexer")
+![Demultiplexer](hardware/multiplexers/DMux.png "Demultiplexer")
 
 ### 16 bits versions of gates
 
@@ -191,36 +204,40 @@ Notation `[0..15]` indicates 16 bits number where 0 is the least significant dig
 
 Negates each bit independently.
 
-![NOT16](hardware/gates-16-bits/Not16.png  "NOT16")
+![NOT16](hardware/gates-16-bits/Not16.png "NOT16")
 
 #### 16 bits AND
 
 Bitwise `and` on each pair of bits.
 
-![AND16](hardware/gates-16-bits/And16.png  "AND16")
+![AND16](hardware/gates-16-bits/And16.png "AND16")
 
 #### 16 bits OR
 
 Bitwise `or` on each pair of bits.
 
-![OR16](hardware/gates-16-bits/Or16.png  "OR16")
+![OR16](hardware/gates-16-bits/Or16.png "OR16")
 
 #### OR 8 Way
 
-Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
+Returns *false* if all 8 bits of input are set to *false*, *true* otherwise.
 
-![OR8Way](hardware/gates-16-bits/Or8Way.png  "OR8Way")
+![OR8Way](hardware/gates-16-bits/Or8Way.png "OR8Way")
 
 #### 16 bits Multiplexer
+
+Selects one of two 16 bits numbers.
 
 | sel | Out |
 | --- | --- |
 | 0   | In0 |
 | 1   | In1 |
 
-![Mux16](hardware/gates-16-bits/Mux16.png  "Mux16")
+![Mux16](hardware/gates-16-bits/Mux16.png "Mux16")
 
 #### 16 bits Multiplexer 4 Way
+
+Selects one of four 16 bits numbers.
 
 | sel | Out |
 | --- | --- |
@@ -229,9 +246,11 @@ Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
 | 10  | In2 |
 | 11  | In3 |
 
-![Mux4Way16](hardware/gates-16-bits/Mux4Way16.png  "Mux4Way16")
+![Mux4Way16](hardware/gates-16-bits/Mux4Way16.png "Mux4Way16")
 
 #### 16 bits Multiplexer 8 Way
+
+Selects one of eight 16 bits numbers.
 
 | sel | Out |
 | --- | --- |
@@ -244,9 +263,11 @@ Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
 | 110 | In6 |
 | 111 | In7 |
 
-![Mux8Way16](hardware/gates-16-bits/Mux8Way16.png  "Mux8Way16")
+![Mux8Way16](hardware/gates-16-bits/Mux8Way16.png "Mux8Way16")
 
 #### Demultiplexer 4 Way
+
+Forwards 16 bits input number into one of four selected outputs.
 
 | sel | Out0 | Out1 | Out2 | Out3 |
 | --- | ---- | ---- | ---- | ---- |
@@ -255,9 +276,11 @@ Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
 | 10  | 0    | 0    | In   | 0    |
 | 11  | 0    | 0    | 0    | In   |
 
-![DMux4Way](hardware/gates-16-bits/DMux4Way.png  "DMux4Way")
+![DMux4Way](hardware/gates-16-bits/DMux4Way.png "DMux4Way")
 
 #### Demultiplexer 8 Way
+
+Forwards 16 bits input number into one of eight selected outputs.
 
 | sel | Out0 | Out1 | Out2 | Out3 | Out4 | Out5 | Out6 | Out7 |
 | --- | ---  | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
@@ -270,7 +293,7 @@ Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
 | 110 | 0    | 0    | 0    | 0    | 0    | 0    | In   | 0    |
 | 111 | 0    | 0    | 0    | 0    | 0    | 0    | 0    | In   |
 
-![DMux8Way](hardware/gates-16-bits/DMux8Way.png  "DMux8Way")
+![DMux8Way](hardware/gates-16-bits/DMux8Way.png "DMux8Way")
 
 ### Arithmetic Logic Union
 
@@ -283,6 +306,7 @@ Returns 0 if all 8 bits for both of numbers are set to 0, 1 otherwise.
 #### Half Adder
 
 Used for creating [Full Adder](#full-adder).
+Adds two 1 bit numbers and stores the result in *sum* and *carry* where *carry* is [MSB](https://en.wikipedia.org/wiki/Most_significant_bit).
 
 | In0 | In1 | sum | carry |
 | --- | --- | --- | ----- |
@@ -291,11 +315,12 @@ Used for creating [Full Adder](#full-adder).
 | 1   | 0   | 1   | 0     |
 | 1   | 1   | 0   | 1     |
 
-![HalfAdder](hardware/alu/HalfAdder.png  "HalfAdder")
+![HalfAdder](hardware/alu/HalfAdder.png "HalfAdder")
 
 #### Full Adder
 
 Used for creating [Adder](#adder).
+Adds three 1 bit numbers and stores the result in *sum* and *carry* where *carry* is [MSB](https://en.wikipedia.org/wiki/Most_significant_bit).
 
 | In0 | In1 | In2 | sum | carry |
 | --- | --- | --- | --- | ----- |
@@ -308,34 +333,34 @@ Used for creating [Adder](#adder).
 | 1   | 1   | 0   | 0   | 1     |
 | 1   | 1   | 1   | 1   | 1     |
 
-![FullAdder](hardware/alu/FullAdder.png  "FullAdder")
+![FullAdder](hardware/alu/FullAdder.png "FullAdder")
 
 #### Adder
 
 Adds two 16-bit values.
 The most significant carry bit is ignored.
 
-![Add16](hardware/alu/Add16.png  "Add16")
+![Add16](hardware/alu/Add16.png "Add16")
 
 #### Incrementer
 
 16 bits Incrementer. Increases the input value by 1.
 
-![Inc16](hardware/alu/Inc16.png  "Inc16")
+![Inc16](hardware/alu/Inc16.png "Inc16")
 
 #### ALU
 
-16 bits Arithmetic Logic Union.
+16 bits [Arithmetic Logic Union](https://en.wikipedia.org/wiki/Arithmetic_logic_unit).
 
-Computes one of the following functions:
+ALU assumes that each 16 bit number is [Two's complement](#https://en.wikipedia.org/wiki/Two%27s_complement).
+Thus the maximum is `2^15 - 1 = 32767` and minimum is `-2^15 = -32768`.
 
-`x+y, x-y, y-x, 0, 1, -1, x, y, -x, -y, !x, !y, x+1, y+1, x-1, y-1, x&y, x|y`
+ALU can computes one of the following functions for two 16 bits numbers `x` and `y`:
+`x+y, x-y, y-x, 0, 1, -1, x, y, -x, -y, !x, !y, x+1, y+1, x-1, y-1, x&y, x|y`,
+according to 6 input bits denoted `zx, nx, zy, ny, f, no`.
 
-on two 16-bit inputs, according to 6 input bits denoted `zx, nx, zy, ny, f, no`.
 In addition, the ALU computes two 1-bit outputs:
-
 if the ALU output == 0, `zr` is set to 1; otherwise `zr` is set to 0;
-
 if the ALU output < 0, `ng` is set to 1; otherwise `ng` is set to 0.
 
 `zx` - zero `x`
@@ -373,28 +398,28 @@ if the ALU output < 0, `ng` is set to 1; otherwise `ng` is set to 0.
 | 0   | 0   | 0   | 0   | 0   | 0   | x&y  |
 | 0   | 1   | 0   | 1   | 0   | 1   | x\|y |
 
-![ALU](hardware/alu/ALU.png  "ALU")
+![ALU](hardware/alu/ALU.png "ALU")
 
 ### Memory
+
+[Memory](https://en.wikipedia.org/wiki/Computer_memory) is a device used to store information.
 
 1. [Flip-flop](#flip-flop)
 2. [Bit](#bit)
 3. [Register](#register)
-4. [RAM with 8 registers](#ram-with-8-registers)
-5. [RAM with 64 registers](#ram-with-64-registers)
-6. [RAM with 512 registers](#ram-with-512-registers)
-7. [RAM with 4096 registers](#ram-with-4096-registers)
-8. [RAM with 16384 registers](#ram-with-16384-registers)
-9. [Program Counter](#program-counter)
+4. [RAM](#ram)
+5. [Program Counter](#program-counter)
 
 #### Flip-flop
 
 Flip-flop is a circuit that has two stables states and is used to store state information.
 It returns its input in next clock cycle.
 
-![DFF](hardware/memory/DFF.png  "DFF")
+![DFF](hardware/memory/DFF.png "DFF")
 
 #### Bit
+
+[Bit](https://en.wikipedia.org/wiki/Bit) stores one bit of information.
 
 | load | out(t) | out(t+1) |
 | ---- | ------ | -------- |
@@ -403,47 +428,42 @@ It returns its input in next clock cycle.
 | 1    | 0      | In       |
 | 1    | 1      | In       |
 
-![Bit](hardware/memory/Bit.png  "Bit")
+![Bit](hardware/memory/Bit.png "Bit")
 
-##### Register
+#### Register
 
-16 bit register.
+[Register](https://en.wikipedia.org/wiki/Processor_register) stores one 16 bits number.
 
-![Register](hardware/memory/Register.png  "Register")
+![Register](hardware/memory/Register.png "Register")
 
-#### RAM with 8 registers
+#### RAM
 
-Returns value stored at given address in next clock cycle.
+[Random Access Memory](https://en.wikipedia.org/wiki/Random-access_memory),
+build of several registers, allows to read and write to given *address* in almost the same amount of time irrespectively of its physical location.
 
-![RAM8](hardware/memory/RAM8.png  "RAM8")
+##### RAM with 8 registers
 
-#### RAM with 64 registers
+![RAM8](hardware/memory/RAM8.png "RAM8")
 
-Returns value stored at given address in next clock cycle.
+##### RAM with 64 registers
 
-![RAM64](hardware/memory/RAM64.png  "RAM64")
+![RAM64](hardware/memory/RAM64.png "RAM64")
 
-#### RAM with 512 registers
+##### RAM with 512 registers
 
-Returns value stored at given address in next clock cycle.
+![RAM512](hardware/memory/RAM512.png "RAM512")
 
-![RAM512](hardware/memory/RAM512.png  "RAM512")
+##### RAM with 4096 registers
 
-#### RAM with 4096 registers
+![RAM4K](hardware/memory/RAM4K.png "RAM4K")
 
-Returns value stored at given address in next clock cycle.
+##### RAM with 16384 registers
 
-![RAM4K](hardware/memory/RAM4K.png  "RAM4K")
-
-#### RAM with 16384 registers
-
-Returns value stored at given address in next clock cycle.
-
-![RAM16K](hardware/memory/RAM16K.png  "RAM16K")
+![RAM16K](hardware/memory/RAM16K.png "RAM16K")
 
 #### Program Counter
 
- A 16-bit counter with load and reset control bits.
+[Program Counter](https://en.wikipedia.org/wiki/Program_counter) indicates the address of a next instruction.
 
  ```
  if (reset[t] == 1) out[t+1] = 0
@@ -452,7 +472,7 @@ Returns value stored at given address in next clock cycle.
  else out[t+1] = out[t]
 ```
 
-![PC](hardware/memory/PC.png  "PC")
+![PC](hardware/memory/PC.png "PC")
 
 ### Computer architecture
 
@@ -485,7 +505,7 @@ the range 0x4000-0x5FFF results in accessing the screen memory
 map. Access to address 0x6000 results in accessing the keyboard 
 memory map. The behavior in these addresses is described in the 
 
-![Memory](hardware/computer-architecture/Memory.png  "Memory")
+![Memory](hardware/computer-architecture/Memory.png "Memory")
 
 #### Central Processor Unit
 
@@ -554,11 +574,11 @@ If jump is called the next instruction is taken from register A.
 | 1   | 1   | 0   | JLE  |
 | 1   | 1   | 1   | JMP  |
 
-![CPU](hardware/computer-architecture/CPU.png  "CPU")
+![CPU](hardware/computer-architecture/CPU.png "CPU")
 
 #### Computer
 
-![Computer](hardware/computer-architecture/Computer.png  "Computer")
+![Computer](hardware/computer-architecture/Computer.png "Computer")
 
 ## Software
 
@@ -639,4 +659,25 @@ encountered, starting at RAM address 16 (0x0010).
 
 #### Assembler Implementation
 
+Assembler is located in `software/assembler` and is written in [Go](https://golang.org/). To use it, first build in from that directory:
+`go build`
+This will create the binary which takes the assembly file as an argument and creates file containing corresponding machine language code.
+On Linux, command
+`./assembler SomeFile.asm`
+will create file `SomeFile.hack` for correct assembly file or will print an error to `stderr`.
+
+Logic of the Assembler is divided onto separate modules:
+
+* *Parser* is responsible for reading the input file, filtering out white space and comments and providing access to commands components.
+* *Code* is responsible for coding each instruction into machine language.
+* *Symbol Table* is responsible for translating [Assembler Symbols](#assembler-symbols) onto physical addresses.
+* *Assembler* uses above modules to create final results.
+
+Assembler parsers file twice. In first iteration it counts all the *address* and *compute* commands and stores *Label* symbols addresses.
+In the second iteration it translates all all the *address* and *compute* commands and substitutes *symbols* with physical addresses.
+If an error occurs during any of this phase, program is stopped and error containing line at which problem occurred will be printed to `stderr`.
+
 #### Assembly Examples
+
+Few examples of the Assembly language are stored at `software/assembler-examples`.
+You may test it using `CPUEmulator` stored in `tools` directory.
