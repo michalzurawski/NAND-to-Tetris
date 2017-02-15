@@ -17,6 +17,7 @@ type Parser struct {
 
 type CommandType int
 
+// FIXME change constants names
 const (
   A_COMMAND = iota
   C_COMMAND = iota
@@ -32,7 +33,7 @@ func NewParser(fileName string) *Parser {
     os.Exit(1)
   }
   scanner := bufio.NewScanner(file)
-  return &Parser{scanner: scanner}
+  return &Parser{scanner: scanner, file: file}
 }
 
 // Closes the file
@@ -100,6 +101,6 @@ func (parser *Parser) getAssemblyCode() string {
     if commentIndex != -1 {
       text = text[:commentIndex]
     }
-    return strings.Trim(text, " ")
+    return strings.TrimSpace(text)
 }
 
