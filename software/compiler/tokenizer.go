@@ -52,6 +52,12 @@ const (
 	FALSE       Keyword = iota
 	NULL        Keyword = iota
 	THIS        Keyword = iota
+	ARG         Keyword = iota
+	CONST       Keyword = iota
+	THAT        Keyword = iota
+	LOCAL       Keyword = iota
+	POINTER     Keyword = iota
+	TEMP        Keyword = iota
 )
 
 var keywords = map[string]Keyword{
@@ -99,7 +105,8 @@ const (
 	LESS              Symbol = iota
 	GREATER           Symbol = iota
 	EQUAL             Symbol = iota
-	TILDE             Symbol = iota
+	NOT               Symbol = iota
+	NEG               Symbol = iota
 )
 
 var symbols = map[byte]Symbol{
@@ -121,7 +128,7 @@ var symbols = map[byte]Symbol{
 	'<': LESS,
 	'>': GREATER,
 	'=': EQUAL,
-	'~': TILDE,
+	'~': NOT,
 }
 
 // Opens the input file

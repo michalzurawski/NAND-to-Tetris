@@ -7,34 +7,33 @@ import (
 )
 
 type CompilationEngine struct {
-	file      *os.File
-	tokenizer *Tokenizer
-	open      int
+	vmWriter     *VMWriter
+	tokenizer    *Tokenizer
+	symbolTable  *SymbolTable
+	className    string
+	counterWhile int
+	counterIf    int
 }
 
 // Creates new CompilationEngine
 func NewCompilationEngine(fileName string) *CompilationEngine {
 	tokenizer := NewTokenizer(fileName + ".jack")
-	file, err := os.Create(fileName + ".vm")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not save file %s", fileName)
-		os.Exit(1)
-	}
+	symbolTable := NewSymbolTable()
+	vmWriter := NewVMWriter(fileName + ".vm")
 
-	return &CompilationEngine{file: file, tokenizer: tokenizer}
+	return &CompilationEngine{vmWriter: vmWriter, tokenizer: tokenizer, symbolTable: symbolTable}
 }
 
 // Closes the file
 func (compilationEngine *CompilationEngine) Close() error {
 	compilationEngine.tokenizer.Close()
-	return compilationEngine.file.Close()
+	return compilationEngine.vmWriter.Close()
 }
 
 func (compilationEngine *CompilationEngine) CompileClass() {
-	compilationEngine.writeOpen("<class>\n")
 	compilationEngine.tokenizer.Advance()
 	compilationEngine.eatKeyword(CLASS)
-	compilationEngine.eatIdentifier()
+	compilationEngine.className = compilationEngine.eatIdentifier() + "."
 	compilationEngine.eatSymbol(LEFT_CURLY)
 	for compilationEngine.isKeyword(STATIC, FIELD) {
 		compilationEngine.compileClassVariableDeclaration()
@@ -43,76 +42,81 @@ func (compilationEngine *CompilationEngine) CompileClass() {
 		compilationEngine.compileSubroutine()
 	}
 	compilationEngine.eatSymbol(RIGHT_CURLY)
-	compilationEngine.writeClose("</class>\n")
 }
 
 func (compilationEngine *CompilationEngine) compileClassVariableDeclaration() {
-	compilationEngine.writeOpen("<classVarDec>\n")
-	compilationEngine.eatKeyword(STATIC, FIELD)
-	compilationEngine.compileType()
-	compilationEngine.eatIdentifier()
+	kind := compilationEngine.eatKeyword(STATIC, FIELD)
+	_, typeVar := compilationEngine.compileType()
+	compilationEngine.eatIdentifierDefinition(typeVar, kind)
 	for compilationEngine.isSymbol(COMMA) {
 		compilationEngine.eatSymbol(COMMA)
-		compilationEngine.eatIdentifier()
+		compilationEngine.eatIdentifierDefinition(typeVar, kind)
 	}
 	compilationEngine.eatSymbol(SEMICOLON)
-	compilationEngine.writeClose("</classVarDec>\n")
 }
 
 func (compilationEngine *CompilationEngine) compileSubroutine() {
-	compilationEngine.writeOpen("<subroutineDec>\n")
+	compilationEngine.symbolTable.StartSubroutine()
+	compilationEngine.counterIf = 0
+	compilationEngine.counterWhile = 0
+	functionType := compilationEngine.tokenizer.GetKeyword()
+	if functionType == METHOD {
+		compilationEngine.symbolTable.Define("this", compilationEngine.className, ARG)
+	}
 	compilationEngine.eatKeyword(CONSTRUCTOR, METHOD, FUNCTION)
-	if !compilationEngine.compileType() {
+	if isType, _ := compilationEngine.compileType(); !isType {
 		compilationEngine.eatKeyword(VOID)
 	}
-	compilationEngine.eatIdentifier()
+	name := compilationEngine.eatIdentifier()
 	compilationEngine.eatSymbol(LEFT_PARANTHESIS)
 	compilationEngine.compileParameterList()
 	compilationEngine.eatSymbol(RIGHT_PARANTHESIS)
-	compilationEngine.compileSubroutineBody()
-	compilationEngine.writeClose("</subroutineDec>\n")
+	compilationEngine.compileSubroutineBody(name, functionType)
 }
 
 func (compilationEngine *CompilationEngine) compileParameterList() {
-	compilationEngine.writeOpen("<parameterList>\n")
-	hasParameter := compilationEngine.compileType()
+	hasParameter, varType := compilationEngine.compileType()
 	if hasParameter {
-		compilationEngine.eatIdentifier()
+		compilationEngine.eatIdentifierDefinition(varType, ARG)
 		for compilationEngine.isSymbol(COMMA) {
 			compilationEngine.eatSymbol(COMMA)
-			compilationEngine.compileType()
-			compilationEngine.eatIdentifier()
+			_, varType = compilationEngine.compileType()
+			compilationEngine.eatIdentifierDefinition(varType, ARG)
 		}
 	}
-	compilationEngine.writeClose("</parameterList>\n")
 }
 
-func (compilationEngine *CompilationEngine) compileSubroutineBody() {
-	compilationEngine.writeOpen("<subroutineBody>\n")
+func (compilationEngine *CompilationEngine) compileSubroutineBody(name string, functionType Keyword) {
 	compilationEngine.eatSymbol(LEFT_CURLY)
 	for compilationEngine.isKeyword(VAR) {
 		compilationEngine.compileVariableDeclaration()
 	}
+	compilationEngine.vmWriter.WriteFunction(compilationEngine.className+name, compilationEngine.symbolTable.variableCounter)
+	if functionType == CONSTRUCTOR {
+		classSize := compilationEngine.symbolTable.fieldCounter
+		compilationEngine.vmWriter.WritePush(CONST, classSize)
+		compilationEngine.vmWriter.WriteCall("Memory.alloc", 1)
+		compilationEngine.vmWriter.WritePop(POINTER, 0)
+	} else if functionType == METHOD {
+		compilationEngine.vmWriter.WritePush(ARG, 0)
+		compilationEngine.vmWriter.WritePop(POINTER, 0)
+	}
 	compilationEngine.compileStatements()
 	compilationEngine.eatSymbol(RIGHT_CURLY)
-	compilationEngine.writeClose("</subroutineBody>\n")
 }
 
 func (compilationEngine *CompilationEngine) compileVariableDeclaration() {
-	compilationEngine.writeOpen("<varDec>\n")
 	compilationEngine.eatKeyword(VAR)
-	compilationEngine.compileType()
-	compilationEngine.eatIdentifier()
+	_, typVar := compilationEngine.compileType()
+	compilationEngine.eatIdentifierDefinition(typVar, VAR)
 	for compilationEngine.isSymbol(COMMA) {
 		compilationEngine.eatSymbol(COMMA)
-		compilationEngine.eatIdentifier()
+		compilationEngine.eatIdentifierDefinition(typVar, VAR)
 	}
 	compilationEngine.eatSymbol(SEMICOLON)
-	compilationEngine.writeClose("</varDec>\n")
 }
 
 func (compilationEngine *CompilationEngine) compileStatements() {
-	compilationEngine.writeOpen("<statements>\n")
 	for compilationEngine.isKeyword(LET, IF, WHILE, DO, RETURN) {
 		switch compilationEngine.tokenizer.GetKeyword() {
 		case LET:
@@ -127,158 +131,227 @@ func (compilationEngine *CompilationEngine) compileStatements() {
 			compilationEngine.compileReturn()
 		}
 	}
-	compilationEngine.writeClose("</statements>\n")
 }
 
 func (compilationEngine *CompilationEngine) compileLet() {
-	compilationEngine.writeOpen("<letStatement>\n")
 	compilationEngine.eatKeyword(LET)
-	compilationEngine.eatIdentifier()
+	name := compilationEngine.eatIdentifier()
+	isArray := false
 	if compilationEngine.isSymbol(LEFT_BRACKET) {
 		compilationEngine.eatSymbol(LEFT_BRACKET)
 		compilationEngine.compileExpression()
 		compilationEngine.eatSymbol(RIGHT_BRACKET)
+		compilationEngine.vmWriter.WritePush(compilationEngine.symbolTable.GetVariableInfo(name))
+		compilationEngine.vmWriter.WriteArithmetic(PLUS)
+		isArray = true
 	}
 	compilationEngine.eatSymbol(EQUAL)
 	compilationEngine.compileExpression()
 	compilationEngine.eatSymbol(SEMICOLON)
-	compilationEngine.writeClose("</letStatement>\n")
+	if isArray {
+		compilationEngine.vmWriter.WritePop(TEMP, 0)
+		compilationEngine.vmWriter.WritePop(POINTER, 1)
+		compilationEngine.vmWriter.WritePush(TEMP, 0)
+		compilationEngine.vmWriter.WritePop(THAT, 0)
+	} else {
+		compilationEngine.vmWriter.WritePop(compilationEngine.symbolTable.GetVariableInfo(name))
+	}
 }
 
 func (compilationEngine *CompilationEngine) compileIf() {
-	compilationEngine.writeOpen("<ifStatement>\n")
+	compilationEngine.counterIf++
 	compilationEngine.eatKeyword(IF)
 	compilationEngine.eatSymbol(LEFT_PARANTHESIS)
 	compilationEngine.compileExpression()
 	compilationEngine.eatSymbol(RIGHT_PARANTHESIS)
+	label := compilationEngine.getLabelIfTrue()
+	labelFalse := compilationEngine.getLabelIfFalse()
+	compilationEngine.vmWriter.WriteIf(label)
+	compilationEngine.vmWriter.WriteGoto(labelFalse)
+	compilationEngine.vmWriter.WriteLabel(label)
+	labelEnd := compilationEngine.getLabelIfEnd()
 	compilationEngine.eatSymbol(LEFT_CURLY)
 	compilationEngine.compileStatements()
 	compilationEngine.eatSymbol(RIGHT_CURLY)
 	if compilationEngine.isKeyword(ELSE) {
+		compilationEngine.vmWriter.WriteGoto(labelEnd)
+		compilationEngine.vmWriter.WriteLabel(labelFalse)
 		compilationEngine.eatKeyword(ELSE)
 		compilationEngine.eatSymbol(LEFT_CURLY)
 		compilationEngine.compileStatements()
 		compilationEngine.eatSymbol(RIGHT_CURLY)
+		compilationEngine.vmWriter.WriteLabel(labelEnd)
+	} else {
+		compilationEngine.vmWriter.WriteLabel(labelFalse)
 	}
-	compilationEngine.writeClose("</ifStatement>\n")
 }
 
 func (compilationEngine *CompilationEngine) compileWhile() {
-	compilationEngine.writeOpen("<whileStatement>\n")
+	compilationEngine.counterWhile++
+	label := compilationEngine.getLabelWhile()
+	compilationEngine.vmWriter.WriteLabel(label)
 	compilationEngine.eatKeyword(WHILE)
 	compilationEngine.eatSymbol(LEFT_PARANTHESIS)
 	compilationEngine.compileExpression()
 	compilationEngine.eatSymbol(RIGHT_PARANTHESIS)
+	compilationEngine.vmWriter.WriteArithmetic(NOT)
+	labelEnd := compilationEngine.getLabelWhileEnd()
+	compilationEngine.vmWriter.WriteIf(labelEnd)
 	compilationEngine.eatSymbol(LEFT_CURLY)
 	compilationEngine.compileStatements()
 	compilationEngine.eatSymbol(RIGHT_CURLY)
-	compilationEngine.writeClose("</whileStatement>\n")
+	compilationEngine.vmWriter.WriteGoto(label)
+	compilationEngine.vmWriter.WriteLabel(labelEnd)
 }
 
 func (compilationEngine *CompilationEngine) compileDo() {
-	compilationEngine.writeOpen("<doStatement>\n")
 	compilationEngine.eatKeyword(DO)
-	compilationEngine.eatIdentifier()
+	name := compilationEngine.eatIdentifier()
+	count := 0
 	if compilationEngine.isSymbol(DOT) {
 		compilationEngine.eatSymbol(DOT)
-		compilationEngine.eatIdentifier()
+		if compilationEngine.symbolTable.HasVariable(name) {
+			compilationEngine.vmWriter.WritePush(compilationEngine.symbolTable.GetVariableInfo(name))
+			name = compilationEngine.symbolTable.GetVariableType(name)
+			count = 1
+		}
+		name += "." + compilationEngine.eatIdentifier()
+	} else {
+		compilationEngine.vmWriter.WritePush(POINTER, 0)
+		name = compilationEngine.className + name
+		count = 1
+
 	}
 	compilationEngine.eatSymbol(LEFT_PARANTHESIS)
-	compilationEngine.compileExpressionList()
+	count += compilationEngine.compileExpressionList()
 	compilationEngine.eatSymbol(RIGHT_PARANTHESIS)
 	compilationEngine.eatSymbol(SEMICOLON)
-	compilationEngine.writeClose("</doStatement>\n")
+	compilationEngine.vmWriter.WriteCall(name, count)
+	compilationEngine.vmWriter.WritePop(TEMP, 0)
 }
 
 func (compilationEngine *CompilationEngine) compileReturn() {
-	compilationEngine.writeOpen("<returnStatement>\n")
 	compilationEngine.eatKeyword(RETURN)
 	if !compilationEngine.isSymbol(SEMICOLON) {
 		compilationEngine.compileExpression()
+	} else {
+		compilationEngine.vmWriter.WritePush(CONST, 0)
 	}
 	compilationEngine.eatSymbol(SEMICOLON)
-	compilationEngine.writeClose("</returnStatement>\n")
+	compilationEngine.vmWriter.WriteReturn()
 }
 
 func (compilationEngine *CompilationEngine) compileExpression() {
-	compilationEngine.writeOpen("<expression>\n")
 	compilationEngine.compileTerm()
 	for compilationEngine.isSymbol(PLUS, MINUS, MULTIPLY, DIVIDE, AND, OR, LESS, GREATER, EQUAL) {
-		compilationEngine.eatSymbol(PLUS, MINUS, MULTIPLY, DIVIDE, AND, OR, LESS, GREATER, EQUAL)
+		symbol := compilationEngine.eatSymbol(PLUS, MINUS, MULTIPLY, DIVIDE, AND, OR, LESS, GREATER, EQUAL)
 		compilationEngine.compileTerm()
+		compilationEngine.vmWriter.WriteArithmetic(symbol)
 	}
-	compilationEngine.writeClose("</expression>\n")
 }
 
 func (compilationEngine *CompilationEngine) compileTerm() {
-	compilationEngine.writeOpen("<term>\n")
 	if compilationEngine.isKeyword() {
-		compilationEngine.eatKeyword()
+		keyword := compilationEngine.eatKeyword()
+		if keyword == TRUE || keyword == FALSE || keyword == NULL {
+			compilationEngine.vmWriter.WritePush(CONST, 0)
+			if keyword == TRUE {
+				compilationEngine.vmWriter.WriteArithmetic(NOT)
+			}
+		} else if keyword == THIS {
+			compilationEngine.vmWriter.WritePush(POINTER, 0)
+		}
 	} else if compilationEngine.isIdentifier() {
-		compilationEngine.eatIdentifier()
+		name := compilationEngine.eatIdentifier()
 		if compilationEngine.isSymbol(LEFT_BRACKET) {
 			compilationEngine.eatSymbol(LEFT_BRACKET)
 			compilationEngine.compileExpression()
 			compilationEngine.eatSymbol(RIGHT_BRACKET)
+			compilationEngine.vmWriter.WritePush(compilationEngine.symbolTable.GetVariableInfo(name))
+			compilationEngine.vmWriter.WriteArithmetic(PLUS)
+			compilationEngine.vmWriter.WritePop(POINTER, 1)
+			compilationEngine.vmWriter.WritePush(THAT, 0)
 		} else if compilationEngine.isSymbol(LEFT_PARANTHESIS) {
 			compilationEngine.eatSymbol(LEFT_PARANTHESIS)
-			compilationEngine.compileExpressionList()
+			count := compilationEngine.compileExpressionList()
 			compilationEngine.eatSymbol(RIGHT_PARANTHESIS)
+			compilationEngine.vmWriter.WriteCall(name, count)
 		} else if compilationEngine.isSymbol(DOT) {
 			compilationEngine.eatSymbol(DOT)
-			compilationEngine.eatIdentifier()
+			count := 0
+			if compilationEngine.symbolTable.HasVariable(name) {
+				compilationEngine.vmWriter.WritePush(compilationEngine.symbolTable.GetVariableInfo(name))
+				name = compilationEngine.symbolTable.GetVariableType(name)
+				count = 1
+			}
+			name += "." + compilationEngine.eatIdentifier()
 			compilationEngine.eatSymbol(LEFT_PARANTHESIS)
-			compilationEngine.compileExpressionList()
+			count += compilationEngine.compileExpressionList()
 			compilationEngine.eatSymbol(RIGHT_PARANTHESIS)
+			compilationEngine.vmWriter.WriteCall(name, count)
+		} else {
+			compilationEngine.vmWriter.WritePush(compilationEngine.symbolTable.GetVariableInfo(name))
 		}
 	} else if compilationEngine.tokenizer.GetTokenType() == STRING_CONST {
-		compilationEngine.eatString()
+		stringConst := compilationEngine.eatString()
+		compilationEngine.vmWriter.WritePush(CONST, len(stringConst))
+		compilationEngine.vmWriter.WriteCall("String.new", 1)
+		for _, c := range stringConst {
+			compilationEngine.vmWriter.WritePush(CONST, int(c))
+			compilationEngine.vmWriter.WriteCall("String.appendChar", 2)
+		}
 	} else if compilationEngine.tokenizer.GetTokenType() == INT_CONST {
-		compilationEngine.eatInteger()
+		value := compilationEngine.eatInteger()
+		compilationEngine.vmWriter.WritePush(CONST, value)
 	} else if compilationEngine.isSymbol(LEFT_PARANTHESIS) {
 		compilationEngine.eatSymbol(LEFT_PARANTHESIS)
 		compilationEngine.compileExpression()
 		compilationEngine.eatSymbol(RIGHT_PARANTHESIS)
-	} else if compilationEngine.isSymbol(MINUS, TILDE) {
-		compilationEngine.eatSymbol(MINUS, TILDE)
+	} else if compilationEngine.isSymbol(MINUS, NOT) {
+		symbol := compilationEngine.eatSymbol(MINUS, NOT)
+		if symbol == MINUS {
+			symbol = NEG
+		}
 		compilationEngine.compileTerm()
+		compilationEngine.vmWriter.WriteArithmetic(symbol)
 	}
-	compilationEngine.writeClose("</term>\n")
 }
 
-func (compilationEngine *CompilationEngine) compileExpressionList() {
-	compilationEngine.writeOpen("<expressionList>\n")
-	if !compilationEngine.isSymbol() || compilationEngine.isSymbol(MINUS, TILDE, LEFT_PARANTHESIS) {
+func (compilationEngine *CompilationEngine) compileExpressionList() int {
+	count := 0
+	if !compilationEngine.isSymbol() || compilationEngine.isSymbol(MINUS, NOT, LEFT_PARANTHESIS) {
+		count++
 		compilationEngine.compileExpression()
 		for compilationEngine.isSymbol(COMMA) {
+			count++
 			compilationEngine.eatSymbol(COMMA)
 			compilationEngine.compileExpression()
 		}
 	}
-	compilationEngine.writeClose("</expressionList>\n")
+	return count
 }
 
-func (compilationEngine *CompilationEngine) compileType() bool {
+func (compilationEngine *CompilationEngine) compileType() (bool, string) {
+	var typeVar string
 	if compilationEngine.isKeyword(INT, CHAR, BOOLEAN) {
+		typeVar = compilationEngine.tokenizer.GetStringValue()
 		compilationEngine.eatKeyword(INT, CHAR, BOOLEAN)
 	} else if compilationEngine.isIdentifier() {
+		typeVar = compilationEngine.tokenizer.GetIdentifier()
 		compilationEngine.eatIdentifier()
 	} else {
-		return false
+		return false, ""
 	}
-	return true
+	return true, typeVar
 }
 
-func (compilationEngine *CompilationEngine) eatKeyword(keywords ...Keyword) {
+func (compilationEngine *CompilationEngine) eatKeyword(keywords ...Keyword) Keyword {
 	if !compilationEngine.isKeyword(keywords...) {
-		compilationEngine.writeError("Expected keyword") // TODO: List expected keywords
+		compilationEngine.writeError("Expected keyword")
 	}
 	keyword := compilationEngine.tokenizer.GetKeyword()
-	for i := 0; i < compilationEngine.open; i++ {
-		compilationEngine.file.WriteString(" ")
-	}
-	compilationEngine.file.WriteString("<keyword> " + keywordsToString[keyword] + " </keyword>\n")
 	compilationEngine.tokenizer.Advance()
+	return keyword
 }
 
 func (compilationEngine *CompilationEngine) isKeyword(keywords ...Keyword) bool {
@@ -295,23 +368,13 @@ func (compilationEngine *CompilationEngine) isKeyword(keywords ...Keyword) bool 
 	return false
 }
 
-func (compilationEngine *CompilationEngine) eatSymbol(symbols ...Symbol) {
+func (compilationEngine *CompilationEngine) eatSymbol(symbols ...Symbol) Symbol {
 	if !compilationEngine.isSymbol(symbols...) {
-		fmt.Fprintf(os.Stderr, "At line %d\n", compilationEngine.tokenizer.GetTokenType())
-		fmt.Fprintf(os.Stderr, "At line %s\n", compilationEngine.tokenizer.text)
-		fmt.Fprintf(os.Stderr, "Expected symbol ")
-		for _, symbol := range symbols {
-			fmt.Fprintf(os.Stderr, "%s, ", symbolsToString[symbol])
-		}
-		fmt.Fprintf(os.Stderr, "\n")
 		panic("")
 	}
 	symbol := compilationEngine.tokenizer.GetSymbol()
-	for i := 0; i < compilationEngine.open; i++ {
-		compilationEngine.file.WriteString(" ")
-	}
-	compilationEngine.file.WriteString("<symbol> " + symbolsToString[symbol] + " </symbol>\n")
 	compilationEngine.tokenizer.Advance()
+	return symbol
 }
 
 func (compilationEngine *CompilationEngine) isSymbol(symbols ...Symbol) bool {
@@ -326,108 +389,71 @@ func (compilationEngine *CompilationEngine) isSymbol(symbols ...Symbol) bool {
 	return len(symbols) == 0
 }
 
-func (compilationEngine *CompilationEngine) eatString() {
+func (compilationEngine *CompilationEngine) eatString() string {
 	if compilationEngine.tokenizer.GetTokenType() != STRING_CONST {
 		compilationEngine.writeError("Expected string constant")
 	}
-	for i := 0; i < compilationEngine.open; i++ {
-		compilationEngine.file.WriteString(" ")
-	}
-	compilationEngine.file.WriteString("<stringConstant> " + compilationEngine.tokenizer.GetStringValue() + " </stringConstant>\n")
+	stringConst := compilationEngine.tokenizer.GetStringValue()
 	compilationEngine.tokenizer.Advance()
+	return stringConst
 }
 
-func (compilationEngine *CompilationEngine) eatInteger() {
+func (compilationEngine *CompilationEngine) eatInteger() int {
 	if compilationEngine.tokenizer.GetTokenType() != INT_CONST {
 		compilationEngine.writeError("Expected integer constant")
 	}
-	for i := 0; i < compilationEngine.open; i++ {
-		compilationEngine.file.WriteString(" ")
-	}
-	compilationEngine.file.WriteString("<integerConstant> " + strconv.Itoa(compilationEngine.tokenizer.GetIntegerValue()) + " </integerConstant>\n")
+	value := compilationEngine.tokenizer.GetIntegerValue()
 	compilationEngine.tokenizer.Advance()
+	return value
 }
 
-func (compilationEngine *CompilationEngine) eatIdentifier() {
+func (compilationEngine *CompilationEngine) eatIdentifier() string {
 	if !compilationEngine.isIdentifier() {
-		fmt.Fprintf(os.Stderr, "At line %d\n", compilationEngine.tokenizer.GetTokenType())
-		fmt.Fprintf(os.Stderr, "At line %s\n", compilationEngine.tokenizer.text)
 		compilationEngine.writeError("Expected identifier")
 	}
-	for i := 0; i < compilationEngine.open; i++ {
-		compilationEngine.file.WriteString(" ")
-	}
-	compilationEngine.file.WriteString("<identifier> " + compilationEngine.tokenizer.GetIdentifier() + " </identifier>\n")
+	identifier := compilationEngine.tokenizer.GetIdentifier()
 	compilationEngine.tokenizer.Advance()
+	return identifier
+}
+
+func (compilationEngine *CompilationEngine) eatIdentifierDefinition(variableType string, kind Keyword) {
+	if !compilationEngine.isIdentifier() {
+		compilationEngine.writeError("Expected identifier")
+	}
+	identifier := compilationEngine.tokenizer.GetIdentifier()
+	compilationEngine.tokenizer.Advance()
+	compilationEngine.symbolTable.Define(identifier, variableType, kind)
 }
 
 func (compilationEngine *CompilationEngine) isIdentifier() bool {
 	return compilationEngine.tokenizer.GetTokenType() == IDENTIFIER
 }
 
-func (compilationEngine *CompilationEngine) writeError(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, format, args)
+func (compilationEngine *CompilationEngine) getLabelIfTrue() string {
+	return compilationEngine.getLabelIf("TRUE")
+}
+
+func (compilationEngine *CompilationEngine) getLabelIfFalse() string {
+	return compilationEngine.getLabelIf("FALSE")
+}
+
+func (compilationEngine *CompilationEngine) getLabelIfEnd() string {
+	return compilationEngine.getLabelIf("END")
+}
+
+func (compilationEngine *CompilationEngine) getLabelIf(suffix string) string {
+	return "IF_" + suffix + strconv.Itoa(compilationEngine.counterIf-1)
+}
+
+func (compilationEngine *CompilationEngine) getLabelWhile() string {
+	return "WHILE_EXP" + strconv.Itoa(compilationEngine.counterWhile-1)
+}
+
+func (compilationEngine *CompilationEngine) getLabelWhileEnd() string {
+	return "WHILE_END" + strconv.Itoa(compilationEngine.counterWhile-1)
+}
+
+func (compilationEngine *CompilationEngine) writeError(format string) {
+	fmt.Fprint(os.Stderr, format)
 	os.Exit(1)
-}
-
-func (compilationEngine *CompilationEngine) writeOpen(format string) {
-	for i := 0; i < compilationEngine.open; i++ {
-		compilationEngine.file.WriteString(" ")
-	}
-	compilationEngine.file.WriteString(format)
-	compilationEngine.open += 2
-}
-
-func (compilationEngine *CompilationEngine) writeClose(format string) {
-	compilationEngine.open -= 2
-	for i := 0; i < compilationEngine.open; i++ {
-		compilationEngine.file.WriteString(" ")
-	}
-	compilationEngine.file.WriteString(format)
-}
-
-var symbolsToString = map[Symbol]string{
-	LEFT_PARANTHESIS:  "(",
-	RIGHT_PARANTHESIS: ")",
-	LEFT_BRACKET:      "[",
-	RIGHT_BRACKET:     "]",
-	LEFT_CURLY:        "{",
-	RIGHT_CURLY:       "}",
-	DOT:               ".",
-	COMMA:             ",",
-	SEMICOLON:         ";",
-	PLUS:              "+",
-	MINUS:             "-",
-	MULTIPLY:          "*",
-	DIVIDE:            "/",
-	AND:               "&amp;",
-	OR:                "|",
-	LESS:              "&lt;",
-	GREATER:           "&gt;",
-	EQUAL:             "=",
-	TILDE:             "~",
-}
-
-var keywordsToString = map[Keyword]string{
-	CLASS:       "class",
-	CONSTRUCTOR: "constructor",
-	FUNCTION:    "function",
-	METHOD:      "method",
-	FIELD:       "field",
-	STATIC:      "static",
-	VAR:         "var",
-	INT:         "int",
-	CHAR:        "char",
-	BOOLEAN:     "boolean",
-	VOID:        "void",
-	TRUE:        "true",
-	FALSE:       "false",
-	NULL:        "null",
-	THIS:        "this",
-	LET:         "let",
-	DO:          "do",
-	IF:          "if",
-	ELSE:        "else",
-	WHILE:       "while",
-	RETURN:      "return",
 }

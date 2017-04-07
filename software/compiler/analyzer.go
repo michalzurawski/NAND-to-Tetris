@@ -18,7 +18,7 @@ func main() {
 	files, _ := ioutil.ReadDir(directoryName)
 
 	for _, file := range files {
-		idx := strings.LastIndex(file.Name(),  ".jack")
+		idx := strings.LastIndex(file.Name(), ".jack")
 		if idx == -1 {
 			continue
 		}
