@@ -69,4 +69,15 @@ class Memory {
         let object[-2] = 0;
         return;
     }
+
+    /** Sets the first num bytes of the object to the specified value. */
+    function void memset(Array object, int value, int num) {
+        var int i;
+        let i = 0;
+        while (i < num) {
+            let object[i] = num;
+            let i = i + 1;
+        }
+        return;
+    }
 }
