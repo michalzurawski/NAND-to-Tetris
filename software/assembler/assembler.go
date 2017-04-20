@@ -46,7 +46,7 @@ func main() {
 			symbol := parser.GetSymbol()
 			address := getAddress(symbol, symbolTable)
 			fileSave.WriteString(GetACommand(address) + "\n")
-		case LABEL:
+		case COMMAND:
 			dest, comp, jump := parser.GetMnemonics()
 			fileSave.WriteString(GetCCommand(dest, comp, jump) + "\n")
 		}
